@@ -20,6 +20,7 @@ func main() {
 	var trace bool
 	var reuseport bool
 	var stdlib bool
+	var lb int
 
 	flag.IntVar(&port, "port", 5000, "server port")
 	flag.BoolVar(&udp, "udp", false, "listen on udp")
@@ -27,6 +28,7 @@ func main() {
 	flag.BoolVar(&trace, "trace", false, "print packets to console")
 	flag.IntVar(&loops, "loops", 0, "num loops")
 	flag.BoolVar(&stdlib, "stdlib", false, "use stdlib")
+	flag.IntVar(&lb, "lb", 0, "LoadBalance")
 	flag.Parse()
 
 	var events evio.Events
@@ -41,6 +43,7 @@ func main() {
 		}
 		return
 	}
+	events.LoadBalance = evio.LoadBalance(lb)
 	events.Data = func(c evio.Conn, in []byte) (out []byte, action evio.Action) {
 		if trace {
 			log.Printf("%s", strings.TrimSpace(string(in)))
@@ -55,5 +58,6 @@ func main() {
 	if stdlib {
 		scheme += "-net"
 	}
-	log.Fatal(evio.Serve(events, fmt.Sprintf("%s://:%d?reuseport=%t", scheme, port, reuseport)))
+	adds := fmt.Sprintf("%s://:%d?reuseport=%t", scheme, port, reuseport)
+	log.Fatal(evio.Serve(events, adds, adds))
 }

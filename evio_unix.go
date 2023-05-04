@@ -2,11 +2,13 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+//go:build darwin || netbsd || freebsd || openbsd || dragonfly || linux
 // +build darwin netbsd freebsd openbsd dragonfly linux
 
 package evio
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -258,6 +260,11 @@ func loopTicker(s *server, l *loop) {
 func loopAccept(s *server, l *loop, fd int) error {
 	for i, ln := range s.lns {
 		if ln.fd == fd {
+			ok := false
+			var terr error
+			defer func(ln *listener) {
+				fmt.Println("index: ", l.idx, ", fd: ", fd, ", server fd: ", ln.fd, ", ok: ", ok, ", terr: ", terr)
+			}(ln)
 			if len(s.loops) > 1 {
 				switch s.balance {
 				case LeastConnections:
@@ -277,10 +284,12 @@ func loopAccept(s *server, l *loop, fd int) error {
 					atomic.AddUintptr(&s.accepted, 1)
 				}
 			}
+			ok = true
 			if ln.pconn != nil {
 				return loopUDPRead(s, l, i, fd)
 			}
 			nfd, sa, err := syscall.Accept(fd)
+			terr = err
 			if err != nil {
 				if err == syscall.EAGAIN {
 					return nil

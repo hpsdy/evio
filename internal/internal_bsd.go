@@ -2,11 +2,13 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
+//go:build darwin || netbsd || freebsd || openbsd || dragonfly
 // +build darwin netbsd freebsd openbsd dragonfly
 
 package internal
 
 import (
+	"fmt"
 	"syscall"
 )
 
@@ -69,6 +71,7 @@ func (p *Poll) Wait(iter func(fd int, note interface{}) error) error {
 		}
 		for i := 0; i < n; i++ {
 			if fd := int(events[i].Ident); fd != 0 {
+				fmt.Println("Poll fd: ", fd)
 				if err := iter(fd, nil); err != nil {
 					return err
 				}
